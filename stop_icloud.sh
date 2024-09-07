@@ -1,14 +1,12 @@
 #! /bin/sh
 
-
 ## Description -----------
 
-# Anti nsurlsessiond for macOS
-# Looking for new 'nsurlsessiond' processus and killing it by getting his PID
+# Anti cloudd and nsurlsessiond for macOS
+# Looking for new 'cloudd' and 'nsurlsessiond' processes and killing them by getting their PIDs
 
 # Made by Lucas Tarasconi
-# 07/04/2017
-# @Farnots
+# Modified by Takami Marsh
 
 ## Spinner function -----------
 
@@ -41,12 +39,14 @@ PROCESS="${BLUE}[PROCESS]${NC}"
 INFO="${GREEN}[INFO]${NC}"
 WARNING="${ORANGE}[WARNING]${NC}"
 
-## Welcome pannel -----------
+## Welcome panel -----------
 
 
 echo "+----------------------------------------+"
-echo "| Starting annihilation of nsurlsessiond |"
+echo "| Starting annihilation of cloudd and    |"
+echo "| nsurlsessiond                          |"
 echo "|        Made by Lucas Tarasconi         |"
+echo "|     Modified by Takami Marsh           |"
 echo "+----------------------------------------+"
 
 
@@ -60,19 +60,20 @@ if [ $# -eq 1 ]; then
 fi
 
 
-## Removing the tempory file when exiting -----------
+## Removing the temporary file when exiting -----------
 
 quitting () {
 	echo "\n"
-	echo "${INFO} Removing tempory file"
-	rm ./.nsurlsessiond
+	echo "${INFO} Removing temporary files"
+	rm ./.cloudd ./.nsurlsessiond
 	echo "+----------------------------------------+"
-	echo "| Stoping annihilation of nsurlsessiond  |"
+	echo "| Stopping annihilation of cloudd and    |"
+	echo "| nsurlsessiond                          |"
 	echo "+----------------------------------------+"
 	exit 0
 }
 
-## Core of the script : kill all nsurlsession and show them -----------
+## Core of the script : kill all cloudd and nsurlsessiond processes and show them -----------
 
 killIt () {
 	n=$(expr $line)
@@ -85,25 +86,27 @@ speaking (){
 	killIt
 	current_time="`date +%H:%M:%S`"
 	printf "${PROCESS} ${current_time}"
-	printf " - killing nsurlsessiond number :  $n"
+	printf " - killing process number:  $n"
 }
 
-killNsurl () {
-	pgrep -x nsurlsessiond>./.nsurlsessiond
+killProcesses () {
+	process_name=$1
+	temp_file="./.$process_name"
+	pgrep -x $process_name > $temp_file
 	while read line ; do
 		if [ $verbose -eq 1 ] ; then
 			speaking
 		else 
 			killIt
 		fi
-	done <./.nsurlsessiond
+	done < $temp_file
 	if [ $verbose -eq 1 ] ; then
 		printf "\n"
-		printf "${INFO} Probing for new nsurlsessiond process"
+		printf "${INFO} Probing for new $process_name processes"
 	fi
 }
 
-## To avoid to use too many GPU just to kill processus -----------
+## To avoid using too much CPU just to kill processes -----------
 
 function waiting {
 	sleep 1
@@ -112,22 +115,23 @@ function waiting {
 ## While function -----------
 
 trap "quitting" SIGTERM SIGINT
-printf "${WARNING} Password could be asked once to have the right to kill 'nsurlsessiond' \n"
+printf "${WARNING} Password could be asked once to have the right to kill 'cloudd' and 'nsurlsessiond' \n"
 if [ $verbose -eq 1 ] ; then
-	printf "${INFO} Probing for new nsurlsessiond process  "
+	printf "${INFO} Probing for new cloudd and nsurlsessiond processes  "
 else
-	printf "${INFO} Script is in progess ( '-v' to the verbose mode) : "
+	printf "${INFO} Script is in progress ( '-v' for verbose mode): "
 fi
 sleep 1
 while [[ 1 ]]; do
-	pgrep -x nsurlsessiond>./.nsurlsessiond
+	pgrep -x cloudd > /dev/null
 	if [ $? -eq 0 ]; then
-		killNsurl
+		killProcesses cloudd
+	fi
+	
+	pgrep -x nsurlsessiond > /dev/null
+	if [ $? -eq 0 ]; then
+		killProcesses nsurlsessiond
 	else
 		waiting & spinner
 	fi
-	
 done
-
-
-
